@@ -1,0 +1,28 @@
+project_id = "yvpkurmeryvoxxdhufzn"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[functions.analyze-support]
+verify_jwt = false
+
+[functions.generate-support-reply]
+verify_jwt = false
+
+[functions.whatsapp-ai-chat]
+verify_jwt = false
+
+[functions.generate-content-script]
+verify_jwt = false
