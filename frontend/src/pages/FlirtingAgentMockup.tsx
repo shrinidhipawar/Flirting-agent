@@ -12,6 +12,12 @@ interface User {
   segment: string;
   churn_risk_score: number;
   last_active_at: string;
+  inactive_days: number;
+  last_message?: {
+    content: string;
+    tone: string;
+    timestamp: string;
+  };
 }
 
 const FlirtingAgentMockup = () => {
@@ -46,7 +52,8 @@ const FlirtingAgentMockup = () => {
         title: "Cycle Complete",
         description: `Agent sent ${res.messages_sent} messages!`,
       });
-      // In a real app, you'd re-fetch message logs here
+      // Refresh user list to show new messages
+      fetchUsers();
     } catch (error) {
       toast({ title: "Error", description: "Agent failed to run", variant: "destructive" });
     }
@@ -242,19 +249,62 @@ const FlirtingAgentMockup = () => {
               <div className="flex justify-between items-start">
                 <div>
                   <CardTitle className="text-xl text-white">{user.name}</CardTitle>
-                  <CardDescription className="text-slate-400">Segment: <span className="font-semibold text-blue-400">{user.segment}</span></CardDescription>
+                  <CardDescription className="text-slate-400">
+                    Segment: <span className="font-semibold text-blue-400">{user.segment}</span>
+                  </CardDescription>
                 </div>
                 {user.churn_risk_score > 0.7 && (
                   <span className="bg-red-900/50 text-red-300 px-2 py-1 rounded text-xs font-bold">High Risk</span>
                 )}
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
+              {/* Inactive Days */}
+              <div className="text-sm">
+                <span className="text-slate-400">Inactive: </span>
+                <span className={`font-semibold ${user.inactive_days > 3 ? 'text-red-400' : user.inactive_days > 1 ? 'text-yellow-400' : 'text-green-400'}`}>
+                  {user.inactive_days} days
+                </span>
+              </div>
+
+              {/* Churn Risk */}
+              <div className="text-sm">
+                <span className="text-slate-400">Churn Risk: </span>
+                <span className={`font-semibold ${user.churn_risk_score > 0.7 ? 'text-red-400' : user.churn_risk_score > 0.4 ? 'text-yellow-400' : 'text-green-400'}`}>
+                  {(user.churn_risk_score * 100).toFixed(0)}%
+                </span>
+              </div>
+
+              {/* Last Message - THE KEY PERSONALIZATION DISPLAY */}
+              {user.last_message ? (
+                <div className="bg-slate-700/50 p-3 rounded border border-slate-600 space-y-2">
+                  <div className="text-xs text-slate-400 font-semibold">Last Message:</div>
+                  <div className="text-sm text-white italic">"{user.last_message.content}"</div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className={`px-2 py-1 rounded font-semibold ${user.last_message.tone === 'playful' ? 'bg-purple-900/50 text-purple-300' :
+                      user.last_message.tone === 'warm' ? 'bg-orange-900/50 text-orange-300' :
+                        'bg-blue-900/50 text-blue-300'
+                      }`}>
+                      Tone: {user.last_message.tone}
+                    </span>
+                    <span className="text-slate-500">
+                      {new Date(user.last_message.timestamp).toLocaleTimeString()}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-slate-700/30 p-3 rounded border border-slate-600 text-center">
+                  <span className="text-xs text-slate-500">No messages sent yet</span>
+                </div>
+              )}
+
+              {/* Last Active */}
               <div className="text-xs text-slate-400">
                 Last Active: {new Date(user.last_active_at + "Z").toLocaleString()}
               </div>
 
-              <div className="flex gap-2">
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-2">
                 <Button
                   variant="outline"
                   size="sm"

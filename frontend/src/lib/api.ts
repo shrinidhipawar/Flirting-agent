@@ -12,7 +12,7 @@ export const endpoints = {
     // Utility Messaging
     sendReminder: `${API_BASE_URL}/utility/send-reminder`,
     broadcast: `${API_BASE_URL}/utility/broadcast`,
-    
+
     // Analytics
     analyticsMetrics: (days: number = 7) => `${API_BASE_URL}/analytics/metrics?days=${days}`,
     trackMessage: (messageId: number) => `${API_BASE_URL}/analytics/track/${messageId}`,

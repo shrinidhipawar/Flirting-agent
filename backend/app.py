@@ -44,11 +44,65 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return new_user
 
-@app.get("/users/", response_model=List[schemas.UserResponse])
+@app.get("/users/")
 def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    """List all users."""
+    """
+    List all users with enriched data for dashboard display.
+    Returns: user info + inactive_days + last_message (for personalization demo)
+    
+    IMPORTANT: Segment is calculated dynamically based on current activity,
+    NOT from the stored database value (which may be stale).
+    """
+    from engagement_agent.segmentation import determine_user_segment
+    
     users = db.query(models.User).offset(skip).limit(limit).all()
-    return users
+    
+    enriched_users = []
+    for user in users:
+        # Calculate inactive days
+        time_diff = datetime.utcnow() - user.last_active_at
+        inactive_days = round(time_diff.total_seconds() / 86400, 1)  # Convert to days
+        
+        # Calculate segment DYNAMICALLY (not from database)
+        current_segment = determine_user_segment(user.created_at, user.last_active_at)
+        
+        # Get last message sent to this user
+        last_message = db.query(models.MessageLog).filter(
+            models.MessageLog.user_id == user.id
+        ).order_by(models.MessageLog.sent_at.desc()).first()
+        
+        # Determine tone from last message (extract from engagement messages)
+        last_message_data = None
+        if last_message:
+            # Infer tone from message content
+            content = last_message.content.lower()
+            if "miss you" in content or "waiting" in content or "😉" in content:
+                tone = "playful"
+            elif "welcome" in content or "excited" in content or "🎉" in content:
+                tone = "warm"
+            else:
+                tone = "neutral"
+            
+            last_message_data = {
+                "content": last_message.content,
+                "tone": tone,
+                "timestamp": last_message.sent_at.isoformat()
+            }
+        
+        enriched_users.append({
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "phone_number": user.phone_number,
+            "segment": current_segment,  # DYNAMIC segment, not stored value
+            "churn_risk_score": user.churn_risk_score,
+            "last_active_at": user.last_active_at.isoformat(),
+            "created_at": user.created_at.isoformat(),
+            "inactive_days": inactive_days,
+            "last_message": last_message_data
+        })
+    
+    return enriched_users
 
 @app.post("/users/{user_id}/activity")
 def log_activity(user_id: int, db: Session = Depends(get_db)):

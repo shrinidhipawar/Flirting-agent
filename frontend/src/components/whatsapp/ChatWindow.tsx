@@ -64,8 +64,8 @@ export function ChatWindow({ conversationId, platform = "whatsapp" }: ChatWindow
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const currentLead = leadInfo[platform];
-  const accentGradient = platform === "whatsapp" 
-    ? "from-emerald-500 to-emerald-600" 
+  const accentGradient = platform === "whatsapp"
+    ? "from-emerald-500 to-emerald-600"
     : "from-sky-500 to-sky-600";
   const accentHover = platform === "whatsapp"
     ? "hover:from-emerald-600 hover:to-emerald-700"
@@ -98,7 +98,7 @@ export function ChatWindow({ conversationId, platform = "whatsapp" }: ChatWindow
       sender: "user",
       status: "sent",
     };
-    
+
     setMessages(prev => [...prev, userMessage]);
     setMessage("");
     setIsAITyping(true);
@@ -230,8 +230,8 @@ export function ChatWindow({ conversationId, platform = "whatsapp" }: ChatWindow
                 msg.sender === "lead"
                   ? "bg-muted rounded-tl-none"
                   : msg.sender === "ai"
-                  ? cn("text-white rounded-tr-none bg-gradient-to-br", aiGradient)
-                  : "bg-primary text-primary-foreground rounded-tr-none"
+                    ? cn("text-white rounded-tr-none bg-gradient-to-br", aiGradient)
+                    : "bg-primary text-primary-foreground rounded-tr-none"
               )}
             >
               {msg.sender === "ai" && (
@@ -254,7 +254,7 @@ export function ChatWindow({ conversationId, platform = "whatsapp" }: ChatWindow
                 {msg.status && msg.sender !== "lead" && (
                   <CheckCheck className={cn(
                     "h-3 w-3",
-                    msg.status === "read" 
+                    msg.status === "read"
                       ? (platform === "whatsapp" ? "text-emerald-300" : "text-sky-300")
                       : "text-white/50"
                   )} />
@@ -263,7 +263,7 @@ export function ChatWindow({ conversationId, platform = "whatsapp" }: ChatWindow
             </div>
           </div>
         ))}
-        
+
         {isAITyping && (
           <div className="flex justify-end">
             <div className={cn("rounded-2xl rounded-tr-none px-4 py-3 bg-gradient-to-br", aiGradient)}>
@@ -330,9 +330,9 @@ export function ChatWindow({ conversationId, platform = "whatsapp" }: ChatWindow
           <Button variant="ghost" size="icon">
             <Mic className="h-5 w-5 text-muted-foreground" />
           </Button>
-          <Button 
+          <Button
             className={cn("bg-gradient-to-r", accentGradient, accentHover)}
-            size="icon" 
+            size="icon"
             onClick={() => handleSend()}
             disabled={isAITyping || !message.trim()}
           >
