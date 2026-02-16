@@ -22,11 +22,24 @@ export function NotificationFeed({ userId }: { userId: number }) {
             try {
                 const messages: Message[] = await api.get(endpoints.userMessages(userId));
 
-                if (messages.length === 0) return;
+                // Handle empty state (e.g., fresh DB or cleared DB)
+                if (messages.length === 0) {
+                    if (lastMessageId !== null) {
+                        setLastMessageId(null);
+                    }
+                    isFirstLoad.current = false;
+                    return;
+                }
 
                 // Sort by ID to ensure we handle order correctly
                 const sortedMsgs = messages.sort((a, b) => a.id - b.id);
                 const latestId = sortedMsgs[sortedMsgs.length - 1].id;
+
+                // DETECT DB RESET (IDs rolled back)
+                if (lastMessageId !== null && latestId < lastMessageId) {
+                    setLastMessageId(null);
+                    return;
+                }
 
                 // If this is the very first load, just set the baseline (don't spam old notifications)
                 if (isFirstLoad.current) {
@@ -35,10 +48,12 @@ export function NotificationFeed({ userId }: { userId: number }) {
                     return;
                 }
 
-                // If we have a new ID that is greater than our last seen ID
-                if (lastMessageId !== null && latestId > lastMessageId) {
+                // If we have a new ID that is greater than our last seen ID OR we are recovering from a reset (null)
+                if (lastMessageId === null || latestId > lastMessageId) {
                     // Find all NEW messages
-                    const newMessages = sortedMsgs.filter(m => m.id > lastMessageId);
+                    const newMessages = lastMessageId === null
+                        ? sortedMsgs
+                        : sortedMsgs.filter(m => m.id > lastMessageId);
 
                     newMessages.forEach(msg => {
                         // FIRE THE NOTIFICATION (both toast AND bell icon)!
@@ -63,14 +78,14 @@ export function NotificationFeed({ userId }: { userId: number }) {
             // Add to notification center (bell icon)
             addNotification({
                 type: "message",
-                title: "Hey You! 😉",
+                title: "New Engagement! 🚀",
                 description: msg.content,
                 priority: "medium",
             });
 
             // Also show toast
             toast({
-                title: "Hey You! 😉",
+                title: "New Engagement! 🚀",
                 description: msg.content,
                 className: "bg-purple-100 border-purple-400 border-l-4 text-purple-900",
                 action: <MessageSquareHeart className="h-8 w-8 text-purple-600" />,

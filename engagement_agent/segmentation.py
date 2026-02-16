@@ -9,71 +9,60 @@ from datetime import datetime, timedelta
 from typing import Literal
 
 # Segment types
-SegmentType = Literal["dormant", "new_user", "normal"]
+SegmentType = Literal["dormant", "loyal", "normal"]
 
-# Segmentation thresholds (in days)
-DORMANT_THRESHOLD_DAYS = 3
-NEW_USER_THRESHOLD_DAYS = 1
+# Segmentation thresholds (in MINUTES for easier testing)
+# In production, these would be DAYS (e.g., 3 days for dormant, 30 days for loyal)
+DORMANT_THRESHOLD_MINUTES = 60
+LOYAL_THRESHOLD_MINUTES = 5
 
 
-def calculate_days_since_activity(last_active_at: datetime) -> float:
+def calculate_minutes_since_activity(last_active_at: datetime) -> float:
     """
-    Calculate the number of days since the user was last active.
-    
-    Args:
-        last_active_at: User's last activity timestamp
-        
-    Returns:
-        Number of days (can be fractional)
+    Calculate the number of minutes since the user was last active.
     """
     current_time = datetime.utcnow()
     time_diff = current_time - last_active_at
-    return time_diff.total_seconds() / 86400  # Convert seconds to days
+    return time_diff.total_seconds() / 60
 
 
-def calculate_account_age_days(created_at: datetime) -> float:
+def calculate_account_age_minutes(created_at: datetime) -> float:
     """
-    Calculate the age of the user's account in days.
-    
-    Args:
-        created_at: User's account creation timestamp
-        
-    Returns:
-        Account age in days (can be fractional)
+    Calculate the age of the user's account in minutes.
     """
     current_time = datetime.utcnow()
     time_diff = current_time - created_at
-    return time_diff.total_seconds() / 86400
+    return time_diff.total_seconds() / 60
 
 
 def determine_user_segment(created_at: datetime, last_active_at: datetime) -> SegmentType:
     """
     Determine user segment based on activity and account age.
     
-    Segmentation Rules:
-    - If inactive for >= 3 days → "dormant"
-    - If account age < 1 day → "new_user"
-    - Otherwise → "normal"
+    Segmentation Rules (Optimized for fast testing):
+    - If inactive for >= 2 minutes → "dormant" (needs re-engagement)
+    - If account age >= 5 minutes AND active → "loyal" (established user)
+    - Otherwise → "normal" (new or casual user)
     
     Args:
         created_at: User's account creation timestamp
         last_active_at: User's last activity timestamp
         
     Returns:
-        User segment: "dormant", "new_user", or "normal"
+        User segment: "dormant", "loyal", or "normal"
     """
-    days_inactive = calculate_days_since_activity(last_active_at)
-    account_age = calculate_account_age_days(created_at)
+    minutes_inactive = calculate_minutes_since_activity(last_active_at)
+    account_age_minutes = calculate_account_age_minutes(created_at)
     
     # Check dormant first (highest priority)
-    if days_inactive >= DORMANT_THRESHOLD_DAYS:
+    if minutes_inactive >= DORMANT_THRESHOLD_MINUTES:
         return "dormant"
     
-    # Check if new user
-    if account_age < NEW_USER_THRESHOLD_DAYS:
-        return "new_user"
+    # Check if loyal (established user who is active)
+    if account_age_minutes >= LOYAL_THRESHOLD_MINUTES:
+        return "loyal"
     
-    # Default to normal
+    # Default to normal (new users or casual active users)
     return "normal"
 
 
@@ -82,19 +71,13 @@ def get_tone_for_segment(segment: SegmentType) -> str:
     Map user segment to appropriate message tone.
     
     Tone Mapping:
-    - dormant → "playful" (re-engagement)
-    - new_user → "warm" (welcoming)
-    - normal → "neutral" (standard)
-    
-    Args:
-        segment: User segment
-        
-    Returns:
-        Message tone category
+    - dormant → "playful" (re-engagement: "We miss you!")
+    - loyal → "warm" (appreciation: "Glad you're here!")
+    - normal → "neutral" (standard updates)
     """
     tone_mapping = {
         "dormant": "playful",
-        "new_user": "warm",
+        "loyal": "warm",
         "normal": "neutral"
     }
     

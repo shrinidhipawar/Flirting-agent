@@ -24,8 +24,8 @@ from .decision_logic import (
 from .segmentation import (
     determine_user_segment,
     get_tone_for_segment,
-    calculate_days_since_activity,
-    calculate_account_age_days
+    calculate_minutes_since_activity,
+    calculate_account_age_minutes
 )
 
 __all__ = [
@@ -38,6 +38,6 @@ __all__ = [
     # Segmentation
     "determine_user_segment",
     "get_tone_for_segment",
-    "calculate_days_since_activity",
-    "calculate_account_age_days",
+    "calculate_minutes_since_activity",
+    "calculate_account_age_minutes",
 ]

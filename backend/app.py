@@ -37,7 +37,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
         email=user.email,
         phone_number=user.phone_number,
         last_active_at=datetime.utcnow(),
-        segment="new_user"
+        segment="normal"
     )
     db.add(new_user)
     db.commit()
@@ -48,7 +48,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """
     List all users with enriched data for dashboard display.
-    Returns: user info + inactive_days + last_message (for personalization demo)
+    Returns: user info + inactive_minutes + last_message (for personalization demo)
     
     IMPORTANT: Segment is calculated dynamically based on current activity,
     NOT from the stored database value (which may be stale).
@@ -59,9 +59,18 @@ def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     
     enriched_users = []
     for user in users:
-        # Calculate inactive days
+        # Calculate inactive time
         time_diff = datetime.utcnow() - user.last_active_at
-        inactive_days = round(time_diff.total_seconds() / 86400, 1)  # Convert to days
+        # meaningful display: if < 1 hour, show minutes, else hours/days
+        total_seconds = time_diff.total_seconds()
+        if total_seconds < 3600:
+            inactive_display = f"{int(total_seconds / 60)} mins"
+            # For logic transparency in demo, we can also just return raw minutes
+            inactive_days = round(total_seconds / 60, 1) # Sending minutes as 'inactive_days' field for now to avoid frontend break
+        else:
+            inactive_display = f"{round(total_seconds / 86400, 1)} days"
+            inactive_days = round(total_seconds / 86400, 1)
+
         
         # Calculate segment DYNAMICALLY (not from database)
         current_segment = determine_user_segment(user.created_at, user.last_active_at)
@@ -76,9 +85,9 @@ def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
         if last_message:
             # Infer tone from message content
             content = last_message.content.lower()
-            if "miss you" in content or "waiting" in content or "😉" in content:
+            if "miss you" in content or "return" in content or "waiting" in content or "😉" in content:
                 tone = "playful"
-            elif "welcome" in content or "excited" in content or "🎉" in content:
+            elif "welcome" in content or "glad" in content or "great to see" in content or "🎉" in content:
                 tone = "warm"
             else:
                 tone = "neutral"
@@ -94,11 +103,11 @@ def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
             "name": user.name,
             "email": user.email,
             "phone_number": user.phone_number,
-            "segment": current_segment,  # DYNAMIC segment, not stored value
+            "segment": current_segment,  # DYNAMIC: dormant (>2m), loyal (>5m age), normal
             "churn_risk_score": user.churn_risk_score,
             "last_active_at": user.last_active_at.isoformat(),
             "created_at": user.created_at.isoformat(),
-            "inactive_days": inactive_days,
+            "inactive_days": inactive_days, # Actually minutes if < 1h
             "last_message": last_message_data
         })
     
@@ -106,16 +115,50 @@ def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 
 @app.post("/users/{user_id}/activity")
 def log_activity(user_id: int, db: Session = Depends(get_db)):
-    """Update the user's last_active_at timestamp (e.g., they opened the app)."""
+    """Update the user's last_active_at timestamp. Sending welcome back message if they were dormant."""
+    from message_generation.prompt_builder import generate_message
+    
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    user.last_active_at = datetime.utcnow()
+    # Check if user was inactive for a while (e.g. > 2 minutes)
+    # This simulates a "Log In" after being away
+    current_time = datetime.utcnow()
+    time_diff = current_time - user.last_active_at
+    minutes_inactive = time_diff.total_seconds() / 60
+    
+    message_sent = None
+    
+    # If users come back after 2 minutes (Dormant threshold), welcome them back!
+    if minutes_inactive >= 2.0:
+        # Generate Welcome Back message
+        context = {"name": user.name}
+        message_content = generate_message("welcome_back", context)
+        
+        # Save to DB
+        new_message = models.MessageLog(
+            user_id=user.id,
+            type=models.MessageType.CLIENT_ENGAGEMENT_BRAND,
+            content=message_content,
+            status="sent"
+        )
+        db.add(new_message)
+        message_sent = message_content
+        # Note: We commit update to last_active_at below
+    
+    # Update activity
+    user.last_active_at = current_time
     # Reset churn risk since they are active
     user.churn_risk_score = 0.0
+    
     db.commit()
-    return {"status": "User activity logged", "last_active": user.last_active_at}
+    
+    return {
+        "status": "User activity logged", 
+        "last_active": user.last_active_at,
+        "message_sent": message_sent
+    }
 
 # --- 2. ENGAGEMENT TRIGGER (The Core Logic) ---
 
@@ -145,7 +188,7 @@ def trigger_engagement(background_tasks: BackgroundTasks, db: Session = Depends(
     # Track statistics
     messages_sent = 0
     skipped_users = 0
-    segment_breakdown = {"dormant": 0, "new_user": 0, "normal": 0}
+    segment_breakdown = {"dormant": 0, "loyal": 0, "normal": 0}
     
     for user in all_users:
         # Evaluate user using decision engine

@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 # Configuration
 INACTIVITY_THRESHOLD_SECONDS = 60  # For testing (1 minute)
-MESSAGE_FREQUENCY_HOURS = 24  # Don't message if sent within last 24 hours
+MESSAGE_FREQUENCY_MINUTES = 1  # For testing: Can message every minute
 
 
 def is_user_inactive(last_active_at: datetime) -> bool:
@@ -59,7 +59,7 @@ def check_message_frequency(user_id: int, db_session: Session) -> bool:
     from backend.models import MessageLog
     
     # Calculate cutoff time
-    cutoff_time = datetime.utcnow() - timedelta(hours=MESSAGE_FREQUENCY_HOURS)
+    cutoff_time = datetime.utcnow() - timedelta(minutes=MESSAGE_FREQUENCY_MINUTES)
     
     # Query for recent messages
     recent_message = db_session.query(MessageLog).filter(
@@ -110,7 +110,7 @@ def evaluate_user_for_engagement(user, db_session: Session) -> Dict[str, Any]:
     
     # Check 2: Message frequency control
     if check_message_frequency(user.id, db_session):
-        result["reason"] = f"User was messaged within last {MESSAGE_FREQUENCY_HOURS} hours"
+        result["reason"] = f"User was messaged within last {MESSAGE_FREQUENCY_MINUTES} minutes"
         logger.debug(f"User {user.id} ({user.name}): Skipped - Recently messaged")
         return result
     
@@ -147,7 +147,7 @@ def get_engagement_stats(users, db_session: Session) -> Dict[str, Any]:
         "skipped": 0,
         "by_segment": {
             "dormant": 0,
-            "new_user": 0,
+            "loyal": 0,
             "normal": 0
         },
         "skip_reasons": {

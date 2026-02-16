@@ -10,28 +10,35 @@ from typing import Dict, Any
 # Message templates by tone - App-to-User engagement messages
 MESSAGE_TEMPLATES = {
     "playful": [
-        "Hey {name}! 👋 You've got 3 new matches waiting. Don't leave them hanging! 💕",
-        "{name}, someone's been checking out your profile! 👀 Come see who it is!",
-        "We miss you, {name}! 😢 Your connections have been asking about you. Jump back in!",
-        "{name}! 🎉 You have 5 unread messages. Your admirers are waiting!",
-        "Hey {name}, the party's not the same without you! 🎊 Come catch up on what you've missed!",
-        "{name}, you're missing out! 🔥 New people in your area are looking to connect!"
+        "Your audience is waiting for your comeback, {name}! 🚀 Don't leave them hanging!",
+        "{name}, trends move fast! 📉 Don't let your engagement drop—post something today!",
+        "We miss your creative spark, {name}! ✨ Your followers need fresh content.",
+        "Your followers are asking where you went, {name}! 👀 Time to say hello?",
+        "Ready to break the internet again? � A new trend is waiting for your take!",
+        "A new trend just started—perfect for your style, {name}! 🎵 Hop on it!"
     ],
     "warm": [
-        "Welcome to the community, {name}! 🌟 Let's help you get started on your journey.",
-        "Hi {name}! 👋 We're excited to have you here. Ready to make some connections?",
-        "Hey {name}! ✨ Your profile is looking great! Let's find your perfect match.",
-        "{name}, welcome aboard! 🚀 We've found 10 people you might really click with!",
-        "Great to see you, {name}! 💙 Let's make today the start of something special!",
-        "{name}, you're all set! 🎉 Time to explore and meet amazing people!"
+        "You're killing it with the consistency, {name}! 🔥 Keep it up!",
+        "Your community is growing beautifully! 🌱 We love seeing your progress.",
+        "Love seeing your daily updates, {name}! 💙 You're building a real fanbase.",
+        "You're a top creator this week! 🏆 Your hard work is paying off.",
+        "Your recent content is inspiring so many people! 🌟 Keep sharing your voice.",
+        "Keep up the momentum, {name}! 🚀 You're on the path to monetization!"
     ],
     "neutral": [
-        "Hi {name}, just a quick reminder to check your messages! 📬 You have 2 new notifications.",
-        "Hey {name}! 👋 Your weekly activity summary is ready. See who viewed your profile!",
-        "{name}, don't forget to complete your profile! 📝 It increases your match rate by 3x.",
-        "Hi {name}! 💬 You have pending connection requests. Take a look when you can!",
-        "Hey {name}, hope you're doing well! 😊 Check out today's featured profiles just for you.",
-        "{name}, your feed has been updated! 🌈 New posts from your connections are waiting."
+        "Hi {name}, your weekly analytics are in. 📊 Check your dashboard for insights.",
+        "Tip: Content posted at 6 PM gets +10% reach. ⏰ Try scheduling for then!",
+        "Don't forget to reply to your comments, {name}! 💬 Engagement boosts visibility.",
+        "Your profile views are steady this week. � Check which posts performed best.",
+        "System update: New filters added to the editor. 🎨 Try them out!",
+        "Reminder: Plan your content for the weekend, {name}. 🗓️ Consistency is key."
+    ],
+    "welcome_back": [
+        "Welcome back to the Creator Hub! 🌟 We missed your content.",
+        "Great to see you again! 🚀 Let's get your reach back up.",
+        "Ready to jump back into the feed? 📱 Your audience is ready.",
+        "Your analytics missed you! 📊 Let's make some green arrows today.",
+        "Return of the Creator! � Time to film something amazing."
     ]
 }
 
